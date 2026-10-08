@@ -11,7 +11,7 @@ An Obsidian community plugin that creates meeting notes from Outlook `.msg` file
 - `npm install`: install dependencies.
 - `npm run dev`: esbuild watch mode. Writes `main.js` with inline sourcemaps.
 - `npm run build`: type-checks with `tsc -noEmit -skipLibCheck`, then builds a minified production `main.js`.
-- `npx eslint main.ts`: lint using `.eslintrc`. ESLint is not in `devDependencies`, so install it if needed.
+- `npm run lint`: lints `main.ts` with ESLint (flat config in `eslint.config.mjs`).
 
 There is no test suite. [CONTRIBUTING.md](CONTRIBUTING.md) covers manual testing in Obsidian, the release process and this fork's branch model. In short, `dev` is the default branch, `master` mirrors upstream, and topic branches come off `dev`.
 
