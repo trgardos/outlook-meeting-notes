@@ -230,16 +230,23 @@ export default class OutlookMeetingNotes extends Plugin {
 	}
 
 	addHelperFunctions(hash: TemplateData): TemplateData {
+		// In the frontmatter, render() applies the YAML escaping, which can wrap the value in
+		// double quotes. The helpers need the plain value.
+		const renderUnquoted = (text: string, render: MustacheRender): string => {
+			const rendered = render(text).trim();
+			const quoted = rendered.match(/^"(.*)"$/s);
+			return quoted ? quoted[1].replaceAll(/\\(["\\])/g, '$1') : rendered;
+		};
 		const helperFunctions = {
 			firstWord: () => {
 				return function (words: string, render: MustacheRender) {
-					return render(words).replace(/\W.*$/, '');
+					return renderUnquoted(words, render).replace(/\W.*$/, '');
 				}
 			},
 			dateFormat: () => {
 				return function (datetime_format: string, render: MustacheRender) {
 					const parts = datetime_format.split('|')
-					return moment(render(parts[0]).trim()).format(parts[1]);
+					return moment(renderUnquoted(parts[0], render)).format(parts[1]);
 				}
 			}
 		};
