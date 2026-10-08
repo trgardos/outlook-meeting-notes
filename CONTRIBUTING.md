@@ -47,16 +47,21 @@ If you change a template helper or a setting, update the user documentation in
    This updates `package.json`, `manifest.json` and `versions.json`, commits the
    changes, and creates a tag. The tag is the bare version number, such as `0.2.2`,
    because `.npmrc` sets an empty tag prefix and Obsidian doesn't accept a `v` prefix.
-3. Push the commit and the tag:
+3. Push the commit, then push only the new tag:
 
    ```sh
-   git push && git push --tags
+   git push
+   git push origin 0.2.2   # the version npm just created
    ```
 
+   Don't use `git push --tags`. It pushes every local tag, and GitHub doesn't trigger
+   workflows for tags when more than three are pushed at once, so no release gets built.
 4. Pushing the tag runs [the release workflow](.github/workflows/release.yml). It builds
    the plugin and creates a **draft** GitHub release with `main.js`, `manifest.json` and
-   `styles.css` attached.
-5. On GitHub, add release notes to the draft and publish it.
+   `styles.css` attached. Drafts only appear on the Releases page for people with write
+   access, and not in the repository sidebar.
+5. On GitHub, add release notes to the draft and publish it, or run
+   `gh release edit <tag> --draft=false`.
 
 Obsidian users get updates from the releases on the repository registered in the
 [community plugin list](https://github.com/obsidianmd/obsidian-releases). For this plugin,
