@@ -64,7 +64,7 @@ export default class OutlookMeetingNotes extends Plugin {
 
 			const fileNameEscape = {
 				escape: (str: string): string => {
-					return str.replaceAll('/', this.settings.invalidFilenameCharReplacement);
+					return str.replaceAll(/[/#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
 				}
 			}
 			const fileNameMustache = Mustache.render(
@@ -72,7 +72,7 @@ export default class OutlookMeetingNotes extends Plugin {
 				proxyData(fileData),
 				undefined,
 				fileNameEscape)
-				.replaceAll(/[*"\\<>:|?]/g, this.settings.invalidFilenameCharReplacement);
+				.replaceAll(/[*"\\<>:|?#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
 			const filePath = normalizePath(this.settings.notesFolder + '/' + fileNameMustache + '.md');
 			const newFolderPath = filePath.includes('/') ? filePath.replace(/\/[^/]*$/, '') : '';
 			let meetingNoteFile = vault.getFileByPath(filePath);
