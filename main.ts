@@ -1,4 +1,4 @@
-import { App, displayTooltip, Editor, MarkdownView, Notice, Plugin, PluginSettingTab, Setting, TooltipPlacement, EventRef } from 'obsidian';
+import { App, displayTooltip, Editor, MarkdownView, normalizePath, Notice, Plugin, PluginSettingTab, Setting, TooltipPlacement, EventRef } from 'obsidian';
 import MsgReader from '@kenjiuno/msgreader';
 import proxyData from 'mustache-validator';
 import Mustache from 'mustache';
@@ -62,8 +62,6 @@ export default class OutlookMeetingNotes extends Plugin {
 			let fileData = origFileData as any;
 			fileData.helper_currentDT = moment().format();
 
-			let folderPath = this.settings.notesFolder;
-			if (folderPath == '') { folderPath = '/'; }
 			const fileNameEscape = {
 				escape: (str: string): string => {
 					return str.replaceAll('/', this.settings.invalidFilenameCharReplacement);
@@ -75,16 +73,16 @@ export default class OutlookMeetingNotes extends Plugin {
 				undefined,
 				fileNameEscape)
 				.replaceAll(/[*"\\<>:|?]/g, this.settings.invalidFilenameCharReplacement);
-			const filePath = folderPath + '/' + fileNameMustache + '.md';
-			const newFolderPath = filePath.replace(/\/[^/]*$/, '');
+			const filePath = normalizePath(this.settings.notesFolder + '/' + fileNameMustache + '.md');
+			const newFolderPath = filePath.includes('/') ? filePath.replace(/\/[^/]*$/, '') : '';
 			let meetingNoteFile = vault.getFileByPath(filePath);
 			if (meetingNoteFile) {
 				// File already exists
 				new Notice(meetingNoteFile.basename + ' already exists: opening it');
 			}
 			else {
-				if (vault.getFolderByPath(newFolderPath) == null) {
-					vault.createFolder(newFolderPath);
+				if (newFolderPath != '' && vault.getFolderByPath(newFolderPath) == null) {
+					await vault.createFolder(newFolderPath);
 				}
 				const mustacheOutput = this.renderTemplate(
 					this.settings.notesTemplate,
