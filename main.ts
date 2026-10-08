@@ -127,9 +127,20 @@ export default class OutlookMeetingNotes extends Plugin {
 							+ 'property was not an ArrayBuffer, which should be impossible.');
 					} else {
 						// As readAsArrayBuffer is being used, below, fr.result will be an ArrayBuffer.
-						const msgRdr = new MsgReader(fr.result);
-						this.createMeetingNote(msgRdr);
+						let msgRdr: MsgReader;
+						try {
+							msgRdr = new MsgReader(fr.result);
+						} catch (ee: unknown) {
+							new Notice('Outlook Meeting Notes cannot read ' + droppedFile.name + ' as a msg file.');
+							console.error(ee);
+							return;
+						}
+						this.createMeetingNote(msgRdr).catch((ee: unknown) => console.error(ee));
 					}
+				}
+				fr.onerror = () => {
+					new Notice('Outlook Meeting Notes could not read ' + droppedFile.name
+						+ (fr.error ? ': ' + fr.error.message : ''));
 				}
 				fr.readAsArrayBuffer(droppedFile)
 			}
