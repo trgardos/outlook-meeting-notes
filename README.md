@@ -4,11 +4,12 @@ This is a plugin for [Obsidian](https://obsidian.md) that allows you to create n
 Microsoft Outlook meetings, including the meeting details (date/time,
 subject, recipients, invite message, etc), using a customisable template.
 The plugin processes .msg files that are dragged-and-dropped from the 
-Outlook desktop app onto the plugin icon in the ribbon in Obsidian
+Outlook desktop app onto the plugin icon in the ribbon in Obsidian, and .ics files
+saved from new Outlook.
 
 This makes it easy to take notes of meetings in Obsidian.
 
-By processing .msg files, the plugin does not depend on having to run code within
+By processing .msg and .ics files, the plugin does not depend on having to run code within
 Outlook or on Microsoft 365 administrators authorising an app to connect to the
 Microsoft Graph API.
 
@@ -20,7 +21,7 @@ to change the filename template to include the current date/time instead (or as 
 using the helper field [helper_currentDT](#helper_currentDT).
 
 The plugin relies on the wonderful [msgreader](https://github.com/HiraokaHyperTools/msgreader),
-[mustache.js](https://github.com/janl/mustache.js), and
+[ical.js](https://github.com/kewisch/ical.js), [mustache.js](https://github.com/janl/mustache.js), and
 [mustache-validator](https://github.com/eliasm307/mustache-validator) libraries.
 
 ## Installation
@@ -36,6 +37,16 @@ current tab.
 Outlook Classic creates a .msg file when you drag and drop an appointment or meeting.
 You can also save a meeting as a .msg file (or save one you have received as an email
 attachment) and drag and drop the file onto the plugin icon.
+
+### New Outlook
+New Outlook (for Mac or Windows) doesn't create a file when you drag a meeting out of the
+calendar. Instead, open the meeting, save it as an .ics file, and drag and drop that file
+onto the plugin icon.
+
+An .ics file provides these fields for templates, using the same names as a .msg file:
+`subject`, `apptStartWhole`, `apptEndWhole`, `apptLocation`, `body`, `senderName`,
+`senderEmail`, and `recipients` (each with `name` and `email`). Other .msg fields aren't
+available, so a template that uses them will show an error for an .ics file.
 
 The plugin includes a default template that adds the meeting details
 into the frontmatter (properties) of the created note. It sets the filename of the note

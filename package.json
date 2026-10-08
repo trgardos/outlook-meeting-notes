@@ -6,7 +6,7 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"lint": "eslint main.ts",
+		"lint": "eslint *.ts",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
@@ -26,6 +26,7 @@
 	},
 	"dependencies": {
 		"@kenjiuno/msgreader": "^1.22.0",
+		"ical.js": "^2.2.1",
 		"mustache": "^4.2.0",
 		"mustache-validator": "^0.2.0"
 	}
