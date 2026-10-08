@@ -70,7 +70,8 @@ This setting allows you to specify what invalid characters should be replaced wi
 blank, then invalid characters will be removed. If you specify a space, then any spaces
 at the end of the filename will be removed.
 
-Note - the invalid characters are: `/` `*` `"` `\` `<` `>` `:` `|` `?`
+Note - the invalid characters are: `/` `*` `"` `\` `<` `>` `:` `|` `?` `#` `^` `[` `]`,
+plus newlines and other control characters.
 
 ### Template
 The default template can be customised, or you can write a new

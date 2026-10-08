@@ -64,11 +64,9 @@ export default class OutlookMeetingNotes extends Plugin {
 			let fileData = origFileData as any;
 			fileData.helper_currentDT = moment().format();
 
-			let folderPath = this.settings.notesFolder;
-			if (folderPath == '') { folderPath = '/'; }
 			const fileNameEscape = {
 				escape: (str: string): string => {
-					return str.replaceAll('/', this.settings.invalidFilenameCharReplacement);
+					return str.replaceAll(/[/#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
 				}
 			}
 			const fileNameMustache = Mustache.render(
@@ -76,17 +74,17 @@ export default class OutlookMeetingNotes extends Plugin {
 				proxyData(fileData),
 				undefined,
 				fileNameEscape)
-				.replaceAll(/[*"\\<>:|?]/g, this.settings.invalidFilenameCharReplacement);
-			const filePath = folderPath + '/' + fileNameMustache + '.md';
-			const newFolderPath = filePath.replace(/\/[^/]*$/, '');
+				.replaceAll(/[*"\\<>:|?#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
+			const filePath = normalizePath(this.settings.notesFolder + '/' + fileNameMustache + '.md');
+			const newFolderPath = filePath.includes('/') ? filePath.replace(/\/[^/]*$/, '') : '';
 			let meetingNoteFile = vault.getFileByPath(filePath);
 			if (meetingNoteFile) {
 				// File already exists
 				new Notice(meetingNoteFile.basename + ' already exists: opening it');
 			}
 			else {
-				if (vault.getFolderByPath(newFolderPath) == null) {
-					vault.createFolder(newFolderPath);
+				if (newFolderPath != '' && vault.getFolderByPath(newFolderPath) == null) {
+					await vault.createFolder(newFolderPath);
 				}
 				const mustacheOutput = this.renderTemplate(
 					this.settings.notesTemplate,
@@ -131,9 +129,20 @@ export default class OutlookMeetingNotes extends Plugin {
 							+ 'property was not an ArrayBuffer, which should be impossible.');
 					} else {
 						// As readAsArrayBuffer is being used, below, fr.result will be an ArrayBuffer.
-						const msgRdr = new MsgReader(fr.result);
-						this.createMeetingNote(msgRdr);
+						let msgRdr: MsgReader;
+						try {
+							msgRdr = new MsgReader(fr.result);
+						} catch (ee: unknown) {
+							new Notice('Outlook Meeting Notes cannot read ' + droppedFile.name + ' as a msg file.');
+							console.error(ee);
+							return;
+						}
+						this.createMeetingNote(msgRdr).catch((ee: unknown) => console.error(ee));
 					}
+				}
+				fr.onerror = () => {
+					new Notice('Outlook Meeting Notes could not read ' + droppedFile.name
+						+ (fr.error ? ': ' + fr.error.message : ''));
 				}
 				fr.readAsArrayBuffer(droppedFile)
 			}
@@ -270,7 +279,7 @@ export default class OutlookMeetingNotes extends Plugin {
 					const found = str.match(/\r\n?|\n/);
 					if (found) {
 						return '|\n' + '  ' + str.replaceAll(/\r\n?|\n/g, '\n  ');
-					} else if (str.match(/[:#\[\]\{\},]/)) {
+					} else if (str.match(/[:#\[\]\{\},]|^[?>|&*!%@`'"]|^-(?!\d)|^\s|\s$/)) {
 						return '"' + str.replaceAll(/["\\]/g, '\\$&') + '"';
 					}
 					else return str;
@@ -360,7 +369,7 @@ class OutlookMeetingNotesSettingTab extends PluginSettingTab {
 			.setName('Template')
 			.setDesc('This template will be used for new notes.')
 			.addTextArea(text => text
-				.setPlaceholder('Default: ' + OutlookMeetingNotesDefaultFilenamePattern)
+				.setPlaceholder('Default: ' + OutlookMeetingNotesDefaultTemplate)
 				.setValue(this.plugin.settings.notesTemplate)
 				.onChange(async (value) => {
 					this.plugin.settings.notesTemplate = value;
