@@ -23,13 +23,32 @@ jobs:
           npm install
           npm run build
 
+      - name: Check tag matches manifest version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version=$(node -p "require('./manifest.json').version")
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Tag $tag does not match manifest.json version $version"
+            exit 1
+          fi
+
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          # Fork releases are tagged <upstream version>-fork.<n>, e.g. 0.2.1-fork.1
+          upstream="${tag%%-fork.*}"
+
+          title="$tag"
+          notes=""
+          if [ "$upstream" != "$tag" ]; then
+            title="$tag (based on upstream $upstream)"
+            notes="Fork release **$tag**, based on upstream [davidingerslev/outlook-meeting-notes $upstream](https://github.com/davidingerslev/outlook-meeting-notes/releases/tag/$upstream)."
+          fi
 
           gh release create "$tag" \
-            --title="$tag" \
+            --title="$title" \
+            --notes="$notes" \
             --draft \
             main.js manifest.json styles.css

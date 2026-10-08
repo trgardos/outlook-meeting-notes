@@ -103,8 +103,35 @@ fork-only files such as this section and `CLAUDE.md`.
 
 ### Releases from this fork
 
-The release workflow runs on any tag pushed to this fork, but Obsidian's updater never
-sees those releases. The fork's builds are for your own use: install them by hand or with
-[BRAT](https://github.com/TfTHacker/obsidian42-brat). `manifest.json` still has
-upstream's plugin `id`, so installing a fork build replaces the official plugin in that
-vault.
+Fork releases use the upstream version that `dev` is based on, plus a `-fork.<n>` suffix.
+For example, `0.2.1-fork.1` and `0.2.1-fork.2` are the first and second fork releases
+based on upstream `0.2.1`. The release workflow reads the upstream version from the tag.
+It titles the draft release `0.2.1-fork.1 (based on upstream 0.2.1)` and links to that
+upstream release in the release notes.
+
+To release from `dev`, follow the [Releasing](#releasing) steps, but bump the version
+like this instead of using `npm version patch`:
+
+- **First fork release after syncing with upstream:** write the version out, because
+  `npm version prerelease` would bump the patch number of a plain upstream version:
+
+  ```sh
+  npm version 0.2.1-fork.1
+  ```
+
+- **Later fork releases on the same upstream base:**
+
+  ```sh
+  npm version prerelease --preid=fork   # 0.2.1-fork.1 → 0.2.1-fork.2
+  ```
+
+The workflow fails if the tag doesn't match the `version` in `manifest.json`.
+
+When you sync with upstream after a fork release, merging `master` into `dev` conflicts
+on the `version` in `package.json` and `manifest.json`. Keep upstream's version there.
+`versions.json` keeps both sets of entries.
+
+Obsidian's updater never sees releases from this fork. They're for your own use: install
+them by hand or with [BRAT](https://github.com/TfTHacker/obsidian42-brat).
+`manifest.json` still has upstream's plugin `id`, so installing a fork build replaces the
+official plugin in that vault.
