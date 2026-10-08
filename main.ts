@@ -266,7 +266,7 @@ export default class OutlookMeetingNotes extends Plugin {
 					const found = str.match(/\r\n?|\n/);
 					if (found) {
 						return '|\n' + '  ' + str.replaceAll(/\r\n?|\n/g, '\n  ');
-					} else if (str.match(/[:#\[\]\{\},]/)) {
+					} else if (str.match(/[:#\[\]\{\},]|^[?>|&*!%@`'"]|^-(?!\d)|^\s|\s$/)) {
 						return '"' + str.replaceAll(/["\\]/g, '\\$&') + '"';
 					}
 					else return str;
