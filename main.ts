@@ -3,6 +3,7 @@ import MsgReader from '@kenjiuno/msgreader';
 import proxyData from 'mustache-validator';
 import Mustache from 'mustache';
 import type Moment from 'moment';
+import { icsToTemplateData } from './ics';
 
 const moment = obsidianMoment as unknown as typeof Moment;
 
@@ -40,28 +41,35 @@ const DEFAULT_SETTINGS: OutlookMeetingNotesSettings = {
 type TemplateData = Record<string, unknown>;
 type MustacheRender = (text: string) => string;
 
+function isIcsFile(file: File): boolean {
+	return file.type == 'text/calendar' || file.name.toLowerCase().endsWith('.ics');
+}
+
 export default class OutlookMeetingNotes extends Plugin {
 	settings: OutlookMeetingNotesSettings;
 
 	//TODO: Add functionality to export meeting notes nicely
 
-	async createMeetingNote(msg: MsgReader) {
+	msgToTemplateData(fileContents: ArrayBuffer): TemplateData {
+		const origFileData = new MsgReader(fileContents).getFileData();
+
+		// Check if we got a suitable meeting
+		if (origFileData.dataType != 'msg') {
+			throw new TypeError('Outlook Meeting Notes cannot process the file. '
+				+ 'MsgReader did not parse the file as valid msg format.');
+		} else if (origFileData.messageClass != 'IPM.Appointment') {
+			throw new TypeError('Outlook Meeting Notes cannot process the file. '
+				+ 'It is a valid msg file but not an appointment or meeting.');
+		}
+
+		return origFileData as unknown as TemplateData;
+	}
+
+	async createMeetingNote(getFileData: () => TemplateData) {
 		try {
 			const { vault } = this.app;
 
-			// Get the file data from MsgReader
-			const origFileData = msg.getFileData();
-
-			// Check if we got a suitable meeting
-			if (origFileData.dataType != 'msg') {
-				throw new TypeError('Outlook Meeting Notes cannot process the file. '
-					+ 'MsgReader did not parse the file as valid msg format.');
-			} else if (origFileData.messageClass != 'IPM.Appointment') {
-				throw new TypeError('Outlook Meeting Notes cannot process the file. '
-					+ 'It is a valid msg file but not an appointment or meeting.');
-			}
-
-			const fileData = origFileData as unknown as TemplateData;
+			const fileData = getFileData();
 			this.addHelperFunctions(fileData);
 
 			// Add helper field for the current date and time
@@ -132,15 +140,11 @@ export default class OutlookMeetingNotes extends Plugin {
 							+ 'property was not an ArrayBuffer, which should be impossible.');
 					} else {
 						// As readAsArrayBuffer is being used, below, fr.result will be an ArrayBuffer.
-						let msgRdr: MsgReader;
-						try {
-							msgRdr = new MsgReader(fr.result);
-						} catch (ee: unknown) {
-							new Notice('Outlook Meeting Notes cannot read ' + droppedFile.name + ' as a msg file.');
-							console.error(ee);
-							return;
-						}
-						this.createMeetingNote(msgRdr).catch((ee: unknown) => console.error(ee));
+						const fileContents = fr.result;
+						const getFileData = isIcsFile(droppedFile)
+							? () => icsToTemplateData(new TextDecoder().decode(fileContents))
+							: () => this.msgToTemplateData(fileContents);
+						this.createMeetingNote(getFileData).catch((ee: unknown) => console.error(ee));
 					}
 				}
 				fr.onerror = () => {
@@ -157,7 +161,7 @@ export default class OutlookMeetingNotes extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		const tooltipMessage = 'Outlook Meeting Notes: Drag and drop a meeting onto this icon from Outlook (or a .msg file) to create a meeting note.';
+		const tooltipMessage = 'Outlook Meeting Notes: Drag and drop a meeting onto this icon from Outlook (or a .msg or .ics file) to create a meeting note.';
 
 		// This creates an icon in the left ribbon.
 		// Create an icon that does nothing when clicked, as the effect is from 
@@ -226,16 +230,23 @@ export default class OutlookMeetingNotes extends Plugin {
 	}
 
 	addHelperFunctions(hash: TemplateData): TemplateData {
+		// In the frontmatter, render() applies the YAML escaping, which can wrap the value in
+		// double quotes. The helpers need the plain value.
+		const renderUnquoted = (text: string, render: MustacheRender): string => {
+			const rendered = render(text).trim();
+			const quoted = rendered.match(/^"(.*)"$/s);
+			return quoted ? quoted[1].replaceAll(/\\(["\\])/g, '$1') : rendered;
+		};
 		const helperFunctions = {
 			firstWord: () => {
 				return function (words: string, render: MustacheRender) {
-					return render(words).replace(/\W.*$/, '');
+					return renderUnquoted(words, render).replace(/\W.*$/, '');
 				}
 			},
 			dateFormat: () => {
 				return function (datetime_format: string, render: MustacheRender) {
 					const parts = datetime_format.split('|')
-					return moment(render(parts[0]).trim()).format(parts[1]);
+					return moment(renderUnquoted(parts[0], render)).format(parts[1]);
 				}
 			}
 		};
