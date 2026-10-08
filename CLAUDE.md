@@ -12,11 +12,8 @@ An Obsidian community plugin that creates meeting notes from Outlook `.msg` file
 - `npm run dev`: esbuild watch mode. Writes `main.js` with inline sourcemaps.
 - `npm run build`: type-checks with `tsc -noEmit -skipLibCheck`, then builds a minified production `main.js`.
 - `npx eslint main.ts`: lint using `.eslintrc`. ESLint is not in `devDependencies`, so install it if needed.
-- `npm version patch|minor|major`: bumps the version in `package.json` and runs `version-bump.mjs`, which syncs `manifest.json` and adds an entry to `versions.json` keyed to `minAppVersion`. Update `minAppVersion` in `manifest.json` by hand first if it changed.
 
-There is no test suite. To test the plugin manually, copy `main.js`, `manifest.json` and `styles.css` into `<vault>/.obsidian/plugins/outlook-meeting-notes/`, then drop a `.msg` appointment onto the ribbon icon.
-
-Releases: pushing a git tag triggers `.github/workflows/release.yml`. The workflow builds the plugin and creates a **draft** GitHub release with `main.js`, `manifest.json` and `styles.css`. Tags are the bare version number with no `v` prefix, as Obsidian requires.
+There is no test suite. [CONTRIBUTING.md](CONTRIBUTING.md) covers manual testing in Obsidian, the release process and this fork's branch model. In short, `dev` is the default branch, `master` mirrors upstream, and topic branches come off `dev`.
 
 ## Architecture
 
