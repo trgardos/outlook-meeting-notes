@@ -37,6 +37,9 @@ const DEFAULT_SETTINGS: OutlookMeetingNotesSettings = {
 	notesTemplate: OutlookMeetingNotesDefaultTemplate
 }
 
+type TemplateData = Record<string, unknown>;
+type MustacheRender = (text: string) => string;
+
 export default class OutlookMeetingNotes extends Plugin {
 	settings: OutlookMeetingNotesSettings;
 
@@ -58,15 +61,15 @@ export default class OutlookMeetingNotes extends Plugin {
 					+ 'It is a valid msg file but not an appointment or meeting.');
 			}
 
-			this.addHelperFunctions(origFileData);
+			const fileData = origFileData as unknown as TemplateData;
+			this.addHelperFunctions(fileData);
 
 			// Add helper field for the current date and time
-			let fileData = origFileData as any;
 			fileData.helper_currentDT = moment().format();
 
 			const fileNameEscape = {
 				escape: (str: string): string => {
-					return str.replaceAll(/[/#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
+					return str.replaceAll(/[/#^[\]\p{Cc}]/gu, this.settings.invalidFilenameCharReplacement);
 				}
 			}
 			const fileNameMustache = Mustache.render(
@@ -74,7 +77,7 @@ export default class OutlookMeetingNotes extends Plugin {
 				proxyData(fileData),
 				undefined,
 				fileNameEscape)
-				.replaceAll(/[*"\\<>:|?#^\[\]\x00-\x1f\x7f]/g, this.settings.invalidFilenameCharReplacement);
+				.replaceAll(/[*"\\<>:|?#^[\]\p{Cc}]/gu, this.settings.invalidFilenameCharReplacement);
 			const filePath = normalizePath(this.settings.notesFolder + '/' + fileNameMustache + '.md');
 			const newFolderPath = filePath.includes('/') ? filePath.replace(/\/[^/]*$/, '') : '';
 			let meetingNoteFile = vault.getFileByPath(filePath);
@@ -222,15 +225,15 @@ export default class OutlookMeetingNotes extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	addHelperFunctions(hash: any): any {
+	addHelperFunctions(hash: TemplateData): TemplateData {
 		const helperFunctions = {
 			firstWord: () => {
-				return function (words: string, render: any) {
+				return function (words: string, render: MustacheRender) {
 					return render(words).replace(/\W.*$/, '');
 				}
 			},
 			dateFormat: () => {
-				return function (datetime_format: string, render: any) {
+				return function (datetime_format: string, render: MustacheRender) {
 					const parts = datetime_format.split('|')
 					return moment(render(parts[0]).trim()).format(parts[1]);
 				}
@@ -242,12 +245,12 @@ export default class OutlookMeetingNotes extends Plugin {
 		}
 		// Add helper functions to all objects in arrays so that the helper 
 		// functions work inside mustache sections
-		for (let property in hash) {
-			if (hash[property] instanceof Array) {
-				for (let subproperty in hash[property]) {
-					if (hash[property][subproperty] instanceof Object) {
+		for (const value of Object.values(hash)) {
+			if (value instanceof Array) {
+				for (const item of value) {
+					if (item instanceof Object) {
 						for (func in helperFunctions) {
-							hash[property][subproperty]['helper_' + func] = helperFunctions[func];
+							(item as TemplateData)['helper_' + func] = helperFunctions[func];
 						}
 					}
 				}
@@ -261,7 +264,7 @@ export default class OutlookMeetingNotes extends Plugin {
 	// renderTemplate() //
 	//////////////////////
 	// Parse template into YAML and markdown sections to use different escaping for each
-	renderTemplate(template: string, hash: any): string {
+	renderTemplate(template: string, hash: TemplateData): string {
 		// Regex /^---(\r\n?|\n).*?(\r\n?|\n)---($|\r\n?|\n)/s matches '---' at the start of the string,
 		// then a platform-independent new-line, followed by a non-greedy match (because of *?) of any
 		// character including newlines (because of /s at end), followed by another --- on its own line
@@ -279,7 +282,7 @@ export default class OutlookMeetingNotes extends Plugin {
 					const found = str.match(/\r\n?|\n/);
 					if (found) {
 						return '|\n' + '  ' + str.replaceAll(/\r\n?|\n/g, '\n  ');
-					} else if (str.match(/[:#\[\]\{\},]|^[?>|&*!%@`'"]|^-(?!\d)|^\s|\s$/)) {
+					} else if (str.match(/[:#[\]{},]|^[?>|&*!%@`'"]|^-(?!\d)|^\s|\s$/)) {
 						return '"' + str.replaceAll(/["\\]/g, '\\$&') + '"';
 					}
 					else return str;
@@ -296,7 +299,7 @@ export default class OutlookMeetingNotes extends Plugin {
 		if (templateMD) {
 			const mustacheMDOptions = {
 				escape: (str: string): string => {
-					return str.replaceAll(/[\\\`\*\_\[\]\{\}\<\>\(\)\#\!\|\^]/g, '\\$&')
+					return str.replaceAll(/[\\`*_[\]{}<>()#!|^]/g, '\\$&')
 						.replaceAll('%%', '\\%\\%')
 						.replaceAll('~~', '\\~\\~')
 						.replaceAll('==', '\\=\\=');
