@@ -98,7 +98,7 @@ The default template for notes is:
 title: {{subject}}
 subtitle: meeting notes
 date: {{#helper_dateFormat}}{{apptStartWhole}}|L LT{{/helper_dateFormat}}
-meeting: 'true'
+meeting-organizer: {{senderName}}
 meeting-location: {{apptLocation}}
 meeting-recipients:
 {{#recipients}}

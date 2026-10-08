@@ -14,7 +14,7 @@ const OutlookMeetingNotesDefaultTemplate = `---
 title: {{subject}}
 subtitle: meeting notes
 date: {{#helper_dateFormat}}{{apptStartWhole}}|L LT{{/helper_dateFormat}}
-meeting: 'true'
+meeting-organizer: {{senderName}}
 meeting-location: {{apptLocation}}
 meeting-recipients:
 {{#recipients}}
@@ -62,7 +62,8 @@ export default class OutlookMeetingNotes extends Plugin {
 				+ 'It is a valid msg file but not an appointment or meeting.');
 		}
 
-		return origFileData as unknown as TemplateData;
+		// A personal appointment may have no sender, and the default template uses it
+		return { senderName: '', ...origFileData } as unknown as TemplateData;
 	}
 
 	async createMeetingNote(getFileData: () => TemplateData) {
