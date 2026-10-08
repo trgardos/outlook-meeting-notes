@@ -143,3 +143,7 @@ meeting-recipients:
   - {{#helper_firstWord}}{{name}}{{/helper_firstWord}}
 {{/recipients}}
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing and the release process.
