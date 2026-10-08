@@ -1,4 +1,4 @@
-import { App, displayTooltip, moment as obsidianMoment, Notice, Plugin, PluginSettingTab, Setting, TooltipPlacement } from 'obsidian';
+import { App, displayTooltip, moment as obsidianMoment, normalizePath, Notice, Plugin, PluginSettingTab, Setting, TooltipPlacement } from 'obsidian';
 import MsgReader from '@kenjiuno/msgreader';
 import proxyData from 'mustache-validator';
 import Mustache from 'mustache';
