@@ -356,7 +356,7 @@ class OutlookMeetingNotesSettingTab extends PluginSettingTab {
 			.setName('Template')
 			.setDesc('This template will be used for new notes.')
 			.addTextArea(text => text
-				.setPlaceholder('Default: ' + OutlookMeetingNotesDefaultFilenamePattern)
+				.setPlaceholder('Default: ' + OutlookMeetingNotesDefaultTemplate)
 				.setValue(this.plugin.settings.notesTemplate)
 				.onChange(async (value) => {
 					this.plugin.settings.notesTemplate = value;
